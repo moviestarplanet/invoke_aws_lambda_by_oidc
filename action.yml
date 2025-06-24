@@ -32,11 +32,11 @@ runs:
     - name: Invoke Lambda Function
       id: invoke
       run: |
-        payload=${{ inputs.payload }}
-        echo $payload > payload.json
+        payload='${{ inputs.payload }}'
+        echo "$payload" > payload.json
         aws lambda invoke \
           --function-name ${{ inputs.function-name }} \
-          --payload "$(cat file://payload.json | jq -c .)" \
+          --payload file://payload.json \
           --log-type Tail \
           --cli-binary-format raw-in-base64-out ${{ inputs.additional-parameters }} \
           output.json
