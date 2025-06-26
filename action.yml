@@ -1,12 +1,15 @@
 name: 'Invoke AWS Lambda by OIDC'
 description: 'Invoke AWS Lambda By OIDC'
-author: "y5347M"
+author: "y5347M-Hadiela"
 inputs:
   aws-region:
     description: 'Which AWS region to use'
     required: true
   role-to-assume:
-    description: The Amazon Resource Name (ARN) of the role to assume. Use the provided credentials to assume an IAM role and configure the Actions environment with the assumed role credentials rather than with the provided credentials.
+    description: >
+      The Amazon Resource Name (ARN) of the role to assume. Use the provided credentials
+      to assume an IAM role and configure the Actions environment with the assumed role
+      credentials rather than with the provided credentials.
     required: true
   function-name:
     description: Lambda function name
@@ -15,7 +18,7 @@ inputs:
     description: Lambda payload
     required: true
   additional-parameters:
-    description: 'Additional parameters for the aws lambda invoke command（e.g. --color auto）'
+    description: 'Additional parameters for the aws lambda invoke command (e.g. --color auto)'
     required: false
 outputs:
   lambda-invoke-response:
@@ -29,22 +32,35 @@ runs:
         role-to-assume: ${{ inputs.role-to-assume }}
         aws-region: ${{ inputs.aws-region }}
 
+    - name: Prepare Payload
+      run: echo '${{ inputs.payload }}' > payload.json
+      shell: bash
+
     - name: Invoke Lambda Function
       id: invoke
       run: |
-        echo '${{ inputs.payload }}' > payload.json
-        aws lambda invoke \
-          --function-name ${{ inputs.function-name }} \
-          --payload file://payload.json \
-          --log-type Tail \
-          --cli-binary-format raw-in-base64-out ${{ inputs.additional-parameters }} \
-          output.json
+        if [ -z "${{ inputs.additional-parameters }}" ]; then
+          aws lambda invoke \
+            --function-name ${{ inputs.function-name }} \
+            --payload file://payload.json \
+            --log-type Tail \
+            --cli-binary-format raw-in-base64-out \
+            output.json
+        else
+          aws lambda invoke \
+            --function-name ${{ inputs.function-name }} \
+            --payload file://payload.json \
+            --log-type Tail \
+            --cli-binary-format raw-in-base64-out \
+            ${{ inputs.additional-parameters }} \
+            output.json
+        fi
       shell: bash
 
     - name: Display Lambda Invoke Result
       run: cat output.json
       shell: bash
-    
+
     - name: Set Output
       id: set-output
       run: echo "lambda-invoke-response=$(cat output.json)" >> $GITHUB_OUTPUT
